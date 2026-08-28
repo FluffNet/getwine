@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+  "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+  "https://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Fluff Linux</vendor>
+  <vendor_url>https://fluffnet.org/</vendor_url>
+
+  <action id="com.flufflinux.getwine">
+    <description>Install and configure Wine</description>
+    <description xml:lang="ar">تثبيت Wine وإعداده</description>
+    <description xml:lang="bg">Инсталиране и настройване на Wine</description>
+    <description xml:lang="cs">Nainstalovat a nastavit Wine</description>
+    <description xml:lang="da">Installér og konfigurér Wine</description>
+    <description xml:lang="de">Wine installieren und einrichten</description>
+    <description xml:lang="el">Εγκατάσταση και ρύθμιση του Wine</description>
+    <description xml:lang="es">Instalar y configurar Wine</description>
+    <description xml:lang="et">Wine'i paigaldamine ja seadistamine</description>
+    <description xml:lang="fi">Asenna ja määritä Wine</description>
+    <description xml:lang="fr">Installer et configurer Wine</description>
+    <description xml:lang="ga">Suiteáil agus cumraigh Wine</description>
+    <description xml:lang="he">התקנה והגדרה של Wine</description>
+    <description xml:lang="hr">Instaliraj i konfiguriraj Wine</description>
+    <description xml:lang="hu">A Wine telepítése és beállítása</description>
+    <description xml:lang="it">Installa e configura Wine</description>
+    <description xml:lang="ja">Wine のインストールと設定</description>
+    <description xml:lang="lt">Įdiegti ir sukonfigūruoti Wine</description>
+    <description xml:lang="lv">Instalēt un konfigurēt Wine</description>
+    <description xml:lang="mt">Installa u kkonfigura Wine</description>
+    <description xml:lang="nl">Wine installeren en configureren</description>
+    <description xml:lang="pl">Zainstaluj i skonfiguruj Wine</description>
+    <description xml:lang="pt">Instalar e configurar o Wine</description>
+    <description xml:lang="ro">Instalează și configurează Wine</description>
+    <description xml:lang="ru">Установить и настроить Wine</description>
+    <description xml:lang="sk">Nainštalovať a nastaviť Wine</description>
+    <description xml:lang="sl">Namesti in nastavi Wine</description>
+    <description xml:lang="sv">Installera och konfigurera Wine</description>
+    <message>Authorization is required to install and configure Wine</message>
+    <message xml:lang="ar">التفويض مطلوب لتثبيت Wine وإعداده</message>
+    <message xml:lang="bg">За инсталиране и настройване на Wine е необходимо упълномощаване</message>
+    <message xml:lang="cs">K instalaci a nastavení Wine je vyžadováno oprávnění</message>
+    <message xml:lang="da">Der kræves godkendelse for at installere og konfigurere Wine</message>
+    <message xml:lang="de">Zum Installieren und Einrichten von Wine ist eine Autorisierung erforderlich</message>
+    <message xml:lang="el">Απαιτείται εξουσιοδότηση για την εγκατάσταση και τη ρύθμιση του Wine</message>
+    <message xml:lang="es">Se requiere autorización para instalar y configurar Wine</message>
+    <message xml:lang="et">Wine'i paigaldamiseks ja seadistamiseks on vaja autoriseerimist</message>
+    <message xml:lang="fi">Wine asentaminen ja määrittäminen vaatii valtuutuksen</message>
+    <message xml:lang="fr">Une autorisation est requise pour installer et configurer Wine</message>
+    <message xml:lang="ga">Tá údarú riachtanach chun Wine a shuiteáil agus a chumrú</message>
+    <message xml:lang="he">נדרשת הרשאה כדי להתקין ולהגדיר את Wine</message>
+    <message xml:lang="hr">Za instalaciju i konfiguraciju Winea potrebno je ovlaštenje</message>
+    <message xml:lang="hu">A Wine telepítéséhez és beállításához engedélyezés szükséges</message>
+    <message xml:lang="it">È richiesta l'autorizzazione per installare e configurare Wine</message>
+    <message xml:lang="ja">Wine をインストールして設定するには認証が必要です</message>
+    <message xml:lang="lt">Norint įdiegti ir sukonfigūruoti Wine, reikia įgaliojimo</message>
+    <message xml:lang="lv">Lai instalētu un konfigurētu Wine, nepieciešama autorizācija</message>
+    <message xml:lang="mt">Hija meħtieġa l-awtorizzazzjoni biex Wine jiġi installat u kkonfigurat</message>
+    <message xml:lang="nl">Autorisatie is vereist om Wine te installeren en configureren</message>
+    <message xml:lang="pl">Autoryzacja jest wymagana, aby zainstalować i skonfigurować Wine</message>
+    <message xml:lang="pt">É necessária autorização para instalar e configurar o Wine</message>
+    <message xml:lang="ro">Este necesară autorizarea pentru a instala și configura Wine</message>
+    <message xml:lang="ru">Для установки и настройки Wine требуется авторизация</message>
+    <message xml:lang="sk">Na inštaláciu a nastavenie Wine sa vyžaduje oprávnenie</message>
+    <message xml:lang="sl">Za namestitev in nastavitev programa Wine je potrebna avtorizacija</message>
+    <message xml:lang="sv">Auktorisering krävs för att installera och konfigurera Wine</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/getwine</annotate>
+  </action>
+</policyconfig>
