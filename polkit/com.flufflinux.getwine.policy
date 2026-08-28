@@ -8,7 +8,61 @@
 
   <action id="com.flufflinux.getwine">
     <description>Install Wine and its compatibility components</description>
+    <description xml:lang="ar">تثبيت Wine ومكونات التوافق الخاصة به</description>
+    <description xml:lang="bg">Инсталиране на Wine и компонентите му за съвместимост</description>
+    <description xml:lang="cs">Nainstalovat Wine a jeho součásti pro kompatibilitu</description>
+    <description xml:lang="da">Installér Wine og dets kompatibilitetskomponenter</description>
+    <description xml:lang="de">Wine und seine Kompatibilitätskomponenten installieren</description>
+    <description xml:lang="el">Εγκατάσταση του Wine και των στοιχείων συμβατότητάς του</description>
+    <description xml:lang="es">Instalar Wine y sus componentes de compatibilidad</description>
+    <description xml:lang="et">Wine'i ja selle ühilduvuskomponentide paigaldamine</description>
+    <description xml:lang="fi">Asenna Wine ja sen yhteensopivuuskomponentit</description>
+    <description xml:lang="fr">Installer Wine et ses composants de compatibilité</description>
+    <description xml:lang="ga">Suiteáil Wine agus a chomhpháirteanna comhoiriúnachta</description>
+    <description xml:lang="he">התקנת Wine ורכיבי התאימות שלו</description>
+    <description xml:lang="hr">Instaliraj Wine i njegove komponente za kompatibilnost</description>
+    <description xml:lang="hu">A Wine és kompatibilitási összetevőinek telepítése</description>
+    <description xml:lang="it">Installa Wine e i suoi componenti di compatibilità</description>
+    <description xml:lang="ja">Wine と互換性コンポーネントをインストール</description>
+    <description xml:lang="lt">Įdiegti Wine ir jo suderinamumo komponentus</description>
+    <description xml:lang="lv">Instalēt Wine un tā saderības komponentus</description>
+    <description xml:lang="mt">Installa Wine u l-komponenti tal-kompatibbiltà tiegħu</description>
+    <description xml:lang="nl">Wine en de bijbehorende compatibiliteitscomponenten installeren</description>
+    <description xml:lang="pl">Zainstaluj Wine i jego składniki zgodności</description>
+    <description xml:lang="pt">Instalar o Wine e os respetivos componentes de compatibilidade</description>
+    <description xml:lang="ro">Instalează Wine și componentele sale de compatibilitate</description>
+    <description xml:lang="ru">Установить Wine и его компоненты совместимости</description>
+    <description xml:lang="sk">Nainštalovať Wine a jeho súčasti kompatibility</description>
+    <description xml:lang="sl">Namesti Wine in njegove komponente za združljivost</description>
+    <description xml:lang="sv">Installera Wine och dess kompatibilitetskomponenter</description>
     <message>Authentication is required to install Wine and its compatibility components</message>
+    <message xml:lang="ar">المصادقة مطلوبة لتثبيت Wine ومكونات التوافق الخاصة به</message>
+    <message xml:lang="bg">За инсталиране на Wine и компонентите му за съвместимост е необходимо удостоверяване</message>
+    <message xml:lang="cs">K instalaci Wine a jeho součástí pro kompatibilitu je vyžadováno ověření</message>
+    <message xml:lang="da">Der kræves godkendelse for at installere Wine og dets kompatibilitetskomponenter</message>
+    <message xml:lang="de">Zum Installieren von Wine und seinen Kompatibilitätskomponenten ist eine Authentifizierung erforderlich</message>
+    <message xml:lang="el">Απαιτείται πιστοποίηση για την εγκατάσταση του Wine και των στοιχείων συμβατότητάς του</message>
+    <message xml:lang="es">Se requiere autenticación para instalar Wine y sus componentes de compatibilidad</message>
+    <message xml:lang="et">Wine'i ja selle ühilduvuskomponentide paigaldamiseks on vaja autentimist</message>
+    <message xml:lang="fi">Wine ja sen yhteensopivuuskomponenttien asentaminen vaatii tunnistautumisen</message>
+    <message xml:lang="fr">Une authentification est requise pour installer Wine et ses composants de compatibilité</message>
+    <message xml:lang="ga">Tá fíordheimhniú riachtanach chun Wine agus a chomhpháirteanna comhoiriúnachta a shuiteáil</message>
+    <message xml:lang="he">נדרש אימות כדי להתקין את Wine ואת רכיבי התאימות שלו</message>
+    <message xml:lang="hr">Za instalaciju Winea i njegovih komponenti za kompatibilnost potrebna je autentifikacija</message>
+    <message xml:lang="hu">A Wine és kompatibilitási összetevőinek telepítéséhez hitelesítés szükséges</message>
+    <message xml:lang="it">È richiesta l'autenticazione per installare Wine e i suoi componenti di compatibilità</message>
+    <message xml:lang="ja">Wine と互換性コンポーネントをインストールするには認証が必要です</message>
+    <message xml:lang="lt">Norint įdiegti Wine ir jo suderinamumo komponentus, reikia patvirtinti tapatybę</message>
+    <message xml:lang="lv">Lai instalētu Wine un tā saderības komponentus, nepieciešama autentifikācija</message>
+    <message xml:lang="mt">Hija meħtieġa l-awtentikazzjoni biex jiġu installati Wine u l-komponenti tal-kompatibbiltà tiegħu</message>
+    <message xml:lang="nl">Authenticatie is vereist om Wine en de bijbehorende compatibiliteitscomponenten te installeren</message>
+    <message xml:lang="pl">Uwierzytelnienie jest wymagane, aby zainstalować Wine i jego składniki zgodności</message>
+    <message xml:lang="pt">É necessária autenticação para instalar o Wine e os respetivos componentes de compatibilidade</message>
+    <message xml:lang="ro">Este necesară autentificarea pentru a instala Wine și componentele sale de compatibilitate</message>
+    <message xml:lang="ru">Для установки Wine и его компонентов совместимости требуется аутентификация</message>
+    <message xml:lang="sk">Na inštaláciu Wine a jeho súčastí kompatibility sa vyžaduje overenie</message>
+    <message xml:lang="sl">Za namestitev programa Wine in njegovih komponent za združljivost je potrebna overitev</message>
+    <message xml:lang="sv">Autentisering krävs för att installera Wine och dess kompatibilitetskomponenter</message>
     <defaults>
       <allow_any>no</allow_any>
       <allow_inactive>no</allow_inactive>
