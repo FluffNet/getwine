@@ -171,7 +171,7 @@ fn main() {
     );
 
     println!(
-        "{ORANGE}NOTE: downloads still require an internet connection to complete setup!{RESET}\n"
+        "{ORANGE}NOTE: Internet connectivity is required to complete setup.{RESET}\n"
     );
 
     println!(
