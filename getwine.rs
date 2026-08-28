@@ -2,7 +2,9 @@ use std::{
     env,
     fs,
     io::{self, Write},
-    process::{Command, exit},
+    process::{Command, Stdio, exit},
+    thread,
+    time::Duration,
 };
 
 const ORANGE: &str = "\x1b[38;5;208m";
@@ -15,6 +17,73 @@ fn run(cmd: &str) -> bool {
         .status()
         .map(|s| s.success())
         .unwrap_or(false)
+}
+
+fn run_with_activity_bar(label: &str, program: &str, args: &[&str], debug: bool) -> bool {
+    if debug {
+        println!("  {label}");
+        return Command::new(program)
+            .args(args)
+            .status()
+            .map(|status| status.success())
+            .unwrap_or(false);
+    }
+
+    let mut child = match Command::new(program)
+        .args(args)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(_) => {
+            println!("  [failed] {label}");
+            return false;
+        }
+    };
+
+    const WIDTH: usize = 24;
+    let mut position = 0usize;
+    let mut moving_right = true;
+
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                print!("\r  [{}] {label}", if status.success() { "=".repeat(WIDTH) } else { "!".repeat(WIDTH) });
+                println!(" {}", if status.success() { "done" } else { "failed" });
+                let _ = io::stdout().flush();
+                return status.success();
+            }
+            Ok(None) => {
+                let mut bar = vec![' '; WIDTH];
+                bar[position] = '█';
+                let bar: String = bar.into_iter().collect();
+                print!("\r  [{bar}] {label}");
+                let _ = io::stdout().flush();
+
+                if moving_right {
+                    if position + 1 == WIDTH {
+                        moving_right = false;
+                        position = position.saturating_sub(1);
+                    } else {
+                        position += 1;
+                    }
+                } else if position == 0 {
+                    moving_right = true;
+                    position += 1;
+                } else {
+                    position -= 1;
+                }
+
+                thread::sleep(Duration::from_millis(100));
+            }
+            Err(_) => {
+                let _ = child.kill();
+                println!("\r  [{}] {label} failed", "!".repeat(WIDTH));
+                return false;
+            }
+        }
+    }
 }
 
 fn pause_exit(code: i32) -> ! {
@@ -83,6 +152,15 @@ fn main() {
         "{ORANGE}NOTE: you MUST be connected to the internet to use this installer!{RESET}\n"
     );
 
+    println!(
+        "{ORANGE}THIRD-PARTY SOFTWARE NOTICE:{RESET}\n\
+         GetWine installs DXVK, Microsoft Core Fonts, Microsoft XACT, and the\n\
+         Microsoft Direct3D compiler. Winetricks downloads these required\n\
+         components during setup. Microsoft components are proprietary and\n\
+         subject to Microsoft's license terms. Fluff Linux does not distribute\n\
+         or license these components. Continuing starts the complete installation.\n"
+    );
+
     if !ask_yes_no("Continue?", false) {
         exit(1);
     }
@@ -133,6 +211,23 @@ fn main() {
         run("wineboot --init --update");
     } else {
         run("wineboot --init --update >/dev/null 2>&1");
+    }
+
+    println!("\nInstalling required Wine components...");
+
+    let components = [
+        ("Microsoft Core Fonts", "corefonts"),
+        ("DXVK", "dxvk"),
+        ("Microsoft XACT (64-bit)", "xact_x64"),
+        ("Microsoft Direct3D Compiler 43", "d3dcompiler_43"),
+    ];
+
+    for (label, verb) in components {
+        if !run_with_activity_bar(label, "winetricks", &["-q", verb], debug) {
+            eprintln!("❌ Failed to install {label}.");
+            eprintln!("Run GetWine with -debug to see Winetricks output.");
+            pause_exit(1);
+        }
     }
 
     if fs::metadata(&dot_wine).is_err() {
