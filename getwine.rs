@@ -6,7 +6,7 @@ use std::{
     process::{Command, Stdio, exit},
     sync::mpsc,
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 const ORANGE: &str = "\x1b[38;5;208m";
@@ -238,13 +238,23 @@ fn draw_component_progress(
     component_percentage: usize,
 ) {
     const WIDTH: usize = 30;
-    let overall_percentage =
-        (((component_number - 1) * 100 + component_percentage) / component_total).min(99);
-    let filled = overall_percentage * WIDTH / 100;
+    let filled = component_percentage * WIDTH / 100;
     let bar = format!("{}{}", "#".repeat(filled), "-".repeat(WIDTH - filled));
 
     print!(
-        "\r  [{bar}] {overall_percentage:>3}% overall | {component_number}/{component_total} {label}: {component_percentage:>3}%\x1b[K"
+        "\r  {component_number}/{component_total} {label} [{bar}] {component_percentage:>3}%\x1b[K"
+    );
+    let _ = io::stdout().flush();
+}
+
+fn draw_component_working(
+    label: &str,
+    component_number: usize,
+    component_total: usize,
+    elapsed_seconds: u64,
+) {
+    print!(
+        "\r  {component_number}/{component_total} {label}: installing... {elapsed_seconds}s\x1b[K"
     );
     let _ = io::stdout().flush();
 }
@@ -271,6 +281,9 @@ fn run_with_progress(
     let mut command = user.command(program, args);
     let mut child = match command
         .env("WINETRICKS_DOWNLOADER", "wget")
+        .env("WGETRC", "/dev/null")
+        .env("LC_ALL", "C")
+        .env("LANG", "C")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -294,12 +307,10 @@ fn run_with_progress(
     let expected_downloads = expected_downloads.max(1);
     let mut download_number = 0usize;
     let mut component_percentage = 0usize;
-    draw_component_progress(
-        label,
-        component_number,
-        component_total,
-        component_percentage,
-    );
+    let started = Instant::now();
+    let mut visible_second = 0u64;
+    let mut last_percentage_at: Option<Instant> = None;
+    draw_component_working(label, component_number, component_total, 0);
 
     loop {
         while let Ok(event) = receiver.try_recv() {
@@ -309,6 +320,7 @@ fn run_with_progress(
                     (download_number.saturating_sub(1) * 100) / expected_downloads
                 }
                 ProgressEvent::Percentage(percentage) => {
+                    last_percentage_at = Some(Instant::now());
                     if download_number == 0 {
                         download_number = 1;
                     }
@@ -331,12 +343,8 @@ fn run_with_progress(
         match child.try_wait() {
             Ok(Some(status)) => {
                 if status.success() {
-                    let overall_percentage = component_number * 100 / component_total;
-                    let filled = overall_percentage * 30 / 100;
                     println!(
-                        "\r  [{}{}] {overall_percentage:>3}% overall | {component_number}/{component_total} finished: {label}\x1b[K",
-                        "#".repeat(filled),
-                        "-".repeat(30 - filled),
+                        "\r  ✅ {component_number}/{component_total} finished: {label}\x1b[K",
                     );
                 } else {
                     println!(
@@ -345,7 +353,24 @@ fn run_with_progress(
                 }
                 return status.success();
             }
-            Ok(None) => thread::sleep(Duration::from_millis(50)),
+            Ok(None) => {
+                let download_is_idle = last_percentage_at
+                    .map(|updated| updated.elapsed() >= Duration::from_secs(2))
+                    .unwrap_or(true);
+                if download_is_idle {
+                    let elapsed_seconds = started.elapsed().as_secs();
+                    if elapsed_seconds > visible_second {
+                        visible_second = elapsed_seconds;
+                        draw_component_working(
+                            label,
+                            component_number,
+                            component_total,
+                            elapsed_seconds,
+                        );
+                    }
+                }
+                thread::sleep(Duration::from_millis(50));
+            }
             Err(_) => {
                 let _ = child.kill();
                 println!("\r  [failed] {component_number}/{component_total} {label}\x1b[K");
@@ -513,6 +538,8 @@ fn main() {
             pause_exit(1);
         }
     }
+
+    println!("✅ {component_total}/{component_total} required Wine components installed.");
 
     if fs::metadata(&dot_wine).is_err() {
         user.run_shell(&format!("ln -s '{}' '{}'", wine_prefix, dot_wine));
