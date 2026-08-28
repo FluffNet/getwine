@@ -10,6 +10,7 @@ use std::{
 };
 
 const ORANGE: &str = "\x1b[38;5;208m";
+const RED: &str = "\x1b[31m";
 const RESET: &str = "\x1b[0m";
 
 struct UserContext {
@@ -290,7 +291,9 @@ fn run_with_progress(
     {
         Ok(child) => child,
         Err(_) => {
-            println!("  {component_number}/{component_total} failed: {label}");
+            println!(
+                "  {component_number}/{component_total} {label}: {RED}FAILED{RESET}"
+            );
             return false;
         }
     };
@@ -348,7 +351,7 @@ fn run_with_progress(
                     );
                 } else {
                     println!(
-                        "\r  [failed] {component_number}/{component_total} {label}\x1b[K"
+                        "\r  {component_number}/{component_total} {label}: {RED}FAILED{RESET}\x1b[K"
                     );
                 }
                 return status.success();
@@ -373,7 +376,9 @@ fn run_with_progress(
             }
             Err(_) => {
                 let _ = child.kill();
-                println!("\r  [failed] {component_number}/{component_total} {label}\x1b[K");
+                println!(
+                    "\r  {component_number}/{component_total} {label}: {RED}FAILED{RESET}\x1b[K"
+                );
                 return false;
             }
         }
@@ -535,7 +540,6 @@ fn main() {
             *expected_downloads,
         ) {
             failed_components.push(*label);
-            eprintln!("  Continuing with the remaining components...");
         }
     }
 
@@ -567,7 +571,9 @@ fn main() {
         user.run_shell("rm -f ~/.local/share/applications/getwine.desktop >/dev/null 2>&1");
         println!("✅ Wine setup complete!");
     } else {
-        println!("\n⚠️ Wine setup completed with unavailable compatibility components:");
+        println!(
+            "\n{ORANGE}WARNING: Some Winetricks components failed to download.{RESET}"
+        );
         for component in &failed_components {
             println!("  - {component}");
         }
