@@ -252,11 +252,8 @@ fn draw_component_working(
     label: &str,
     component_number: usize,
     component_total: usize,
-    elapsed_seconds: u64,
 ) {
-    print!(
-        "\r  {component_number}/{component_total} {label}: installing... {elapsed_seconds}s\x1b[K"
-    );
+    print!("\r  {component_number}/{component_total} {label}: installing...\x1b[K");
     let _ = io::stdout().flush();
 }
 
@@ -311,9 +308,9 @@ fn run_with_progress(
     let mut download_number = 0usize;
     let mut component_percentage = 0usize;
     let started = Instant::now();
-    let mut visible_second = 0u64;
+    let mut showing_installation_status = true;
     let mut last_percentage_at: Option<Instant> = None;
-    draw_component_working(label, component_number, component_total, 0);
+    draw_component_working(label, component_number, component_total);
 
     loop {
         while let Ok(event) = receiver.try_recv() {
@@ -334,6 +331,7 @@ fn run_with_progress(
 
             if candidate > component_percentage {
                 component_percentage = candidate;
+                showing_installation_status = false;
                 draw_component_progress(
                     label,
                     component_number,
@@ -360,17 +358,9 @@ fn run_with_progress(
                 let download_is_idle = last_percentage_at
                     .map(|updated| updated.elapsed() >= Duration::from_secs(2))
                     .unwrap_or(true);
-                if download_is_idle {
-                    let elapsed_seconds = started.elapsed().as_secs();
-                    if elapsed_seconds > visible_second {
-                        visible_second = elapsed_seconds;
-                        draw_component_working(
-                            label,
-                            component_number,
-                            component_total,
-                            elapsed_seconds,
-                        );
-                    }
+                if download_is_idle && !showing_installation_status && started.elapsed().as_secs() > 0 {
+                    showing_installation_status = true;
+                    draw_component_working(label, component_number, component_total);
                 }
                 thread::sleep(Duration::from_millis(50));
             }
