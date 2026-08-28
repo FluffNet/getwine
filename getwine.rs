@@ -279,7 +279,6 @@ fn run_with_progress(
     let mut command = user.command(program, args);
     let mut child = match command
         .env("WINETRICKS_DOWNLOADER", "wget")
-        .env("WGETRC", "/dev/null")
         .env("LC_ALL", "C")
         .env("LANG", "C")
         .stdout(Stdio::piped())
