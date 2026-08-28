@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Get Wine..
+Comment=Install & Configure Wine
+Exec=/usr/bin/getwine
+Terminal=true
+Icon=wine-symbolic
+Type=Application
+Terminal=true
+Categories=System;
