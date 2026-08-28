@@ -1,8 +1,9 @@
 use std::{
     env,
     fs,
-    io::{self, Write},
+    io::{self, Read, Write},
     process::{Command, Stdio, exit},
+    sync::mpsc,
     thread,
     time::Duration,
 };
@@ -34,9 +35,77 @@ fn networkmanager_reports_network() -> bool {
         .any(|state| state.trim().starts_with("connected"))
 }
 
-fn run_with_activity_bar(label: &str, program: &str, args: &[&str], debug: bool) -> bool {
+enum ProgressEvent {
+    DownloadStarted,
+    Percentage(u8),
+}
+
+fn percentage_from_line(line: &str) -> Option<u8> {
+    let percent_position = line.find('%')?;
+    let digits = line[..percent_position]
+        .chars()
+        .rev()
+        .take_while(|character| character.is_ascii_digit())
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect::<String>();
+
+    digits.parse::<u8>().ok().filter(|percentage| *percentage <= 100)
+}
+
+fn forward_progress<R: Read + Send + 'static>(reader: R, sender: mpsc::Sender<ProgressEvent>) {
+    thread::spawn(move || {
+        let mut line = Vec::new();
+
+        for byte in reader.bytes().flatten() {
+            if byte == b'\r' || byte == b'\n' {
+                if !line.is_empty() {
+                    let output = String::from_utf8_lossy(&line);
+                    if output.trim_start().starts_with("Downloading http") {
+                        let _ = sender.send(ProgressEvent::DownloadStarted);
+                    }
+                    if let Some(percentage) = percentage_from_line(&output) {
+                        let _ = sender.send(ProgressEvent::Percentage(percentage));
+                    }
+                    line.clear();
+                }
+            } else if line.len() < 16_384 {
+                line.push(byte);
+            }
+        }
+    });
+}
+
+fn draw_component_progress(
+    label: &str,
+    component_number: usize,
+    component_total: usize,
+    component_percentage: usize,
+) {
+    const WIDTH: usize = 30;
+    let overall_percentage =
+        (((component_number - 1) * 100 + component_percentage) / component_total).min(99);
+    let filled = overall_percentage * WIDTH / 100;
+    let bar = format!("{}{}", "#".repeat(filled), "-".repeat(WIDTH - filled));
+
+    print!(
+        "\r  [{bar}] {overall_percentage:>3}% overall | {component_number}/{component_total} {label}: {component_percentage:>3}%\x1b[K"
+    );
+    let _ = io::stdout().flush();
+}
+
+fn run_with_progress(
+    label: &str,
+    program: &str,
+    args: &[&str],
+    debug: bool,
+    component_number: usize,
+    component_total: usize,
+    expected_downloads: usize,
+) -> bool {
     if debug {
-        println!("  {label}");
+        println!("  {component_number}/{component_total} {label}");
         return Command::new(program)
             .args(args)
             .status()
@@ -46,55 +115,85 @@ fn run_with_activity_bar(label: &str, program: &str, args: &[&str], debug: bool)
 
     let mut child = match Command::new(program)
         .args(args)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .env("WINETRICKS_DOWNLOADER", "wget")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
     {
         Ok(child) => child,
         Err(_) => {
-            println!("  [failed] {label}");
+            println!("  {component_number}/{component_total} failed: {label}");
             return false;
         }
     };
 
-    const WIDTH: usize = 24;
-    let mut position = 0usize;
-    let mut moving_right = true;
+    let (sender, receiver) = mpsc::channel();
+    if let Some(stdout) = child.stdout.take() {
+        forward_progress(stdout, sender.clone());
+    }
+    if let Some(stderr) = child.stderr.take() {
+        forward_progress(stderr, sender.clone());
+    }
+    drop(sender);
+
+    let expected_downloads = expected_downloads.max(1);
+    let mut download_number = 0usize;
+    let mut component_percentage = 0usize;
+    draw_component_progress(
+        label,
+        component_number,
+        component_total,
+        component_percentage,
+    );
 
     loop {
+        while let Ok(event) = receiver.try_recv() {
+            let candidate = match event {
+                ProgressEvent::DownloadStarted => {
+                    download_number = (download_number + 1).min(expected_downloads);
+                    (download_number.saturating_sub(1) * 100) / expected_downloads
+                }
+                ProgressEvent::Percentage(percentage) => {
+                    if download_number == 0 {
+                        download_number = 1;
+                    }
+                    ((download_number - 1) * 100 + percentage as usize) / expected_downloads
+                }
+            }
+            .min(99);
+
+            if candidate > component_percentage {
+                component_percentage = candidate;
+                draw_component_progress(
+                    label,
+                    component_number,
+                    component_total,
+                    component_percentage,
+                );
+            }
+        }
+
         match child.try_wait() {
             Ok(Some(status)) => {
-                print!("\r  [{}] {label}", if status.success() { "=".repeat(WIDTH) } else { "!".repeat(WIDTH) });
-                println!(" {}", if status.success() { "done" } else { "failed" });
-                let _ = io::stdout().flush();
+                if status.success() {
+                    let overall_percentage = component_number * 100 / component_total;
+                    let filled = overall_percentage * 30 / 100;
+                    println!(
+                        "\r  [{}{}] {overall_percentage:>3}% overall | {component_number}/{component_total} finished: {label}\x1b[K",
+                        "#".repeat(filled),
+                        "-".repeat(30 - filled),
+                    );
+                } else {
+                    println!(
+                        "\r  [failed] {component_number}/{component_total} {label}\x1b[K"
+                    );
+                }
                 return status.success();
             }
-            Ok(None) => {
-                let mut bar = vec![' '; WIDTH];
-                bar[position] = '█';
-                let bar: String = bar.into_iter().collect();
-                print!("\r  [{bar}] {label}");
-                let _ = io::stdout().flush();
-
-                if moving_right {
-                    if position + 1 == WIDTH {
-                        moving_right = false;
-                        position = position.saturating_sub(1);
-                    } else {
-                        position += 1;
-                    }
-                } else if position == 0 {
-                    moving_right = true;
-                    position += 1;
-                } else {
-                    position -= 1;
-                }
-
-                thread::sleep(Duration::from_millis(100));
-            }
+            Ok(None) => thread::sleep(Duration::from_millis(50)),
             Err(_) => {
                 let _ = child.kill();
-                println!("\r  [{}] {label} failed", "!".repeat(WIDTH));
+                println!("\r  [failed] {component_number}/{component_total} {label}\x1b[K");
                 return false;
             }
         }
@@ -238,15 +337,24 @@ fn main() {
     println!("\nInstalling required Wine components...");
 
     let components = [
-        ("Microsoft Core Fonts", "corefonts"),
-        ("DXVK", "dxvk"),
-        ("VKD3D-Proton", "vkd3d"),
-        ("Microsoft XACT (64-bit)", "xact_x64"),
-        ("Microsoft Direct3D Compiler 43", "d3dcompiler_43"),
+        ("Microsoft Core Fonts", "corefonts", 10),
+        ("DXVK", "dxvk", 1),
+        ("VKD3D-Proton", "vkd3d", 1),
+        ("Microsoft XACT (64-bit)", "xact_x64", 1),
+        ("Microsoft Direct3D Compiler 43", "d3dcompiler_43", 1),
     ];
 
-    for (label, verb) in components {
-        if !run_with_activity_bar(label, "winetricks", &["-q", verb], debug) {
+    let component_total = components.len();
+    for (index, (label, verb, expected_downloads)) in components.iter().enumerate() {
+        if !run_with_progress(
+            label,
+            "winetricks",
+            &["-q", verb],
+            debug,
+            index + 1,
+            component_total,
+            *expected_downloads,
+        ) {
             eprintln!("❌ Failed to install {label}.");
             eprintln!("Run GetWine with -debug to see Winetricks output.");
             pause_exit(1);
@@ -277,4 +385,24 @@ fn main() {
     println!("✅ Wine setup complete!");
 
     pause_exit(0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::percentage_from_line;
+
+    #[test]
+    fn parses_wget_progress() {
+        assert_eq!(
+            percentage_from_line(" 1024K .......... ..........  42%  2.1M 3s"),
+            Some(42)
+        );
+        assert_eq!(percentage_from_line("archive.tar.zst 100% 25.0M 0s"), Some(100));
+    }
+
+    #[test]
+    fn ignores_lines_without_valid_progress() {
+        assert_eq!(percentage_from_line("Downloading archive"), None);
+        assert_eq!(percentage_from_line("Result: 150%"), None);
+    }
 }
