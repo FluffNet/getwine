@@ -19,6 +19,21 @@ fn run(cmd: &str) -> bool {
         .unwrap_or(false)
 }
 
+fn networkmanager_reports_network() -> bool {
+    let output = match Command::new("nmcli")
+        .args(["-t", "-f", "STATE", "general"])
+        .env("LC_ALL", "C")
+        .output()
+    {
+        Ok(output) if output.status.success() => output,
+        _ => return false,
+    };
+
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .any(|state| state.trim().starts_with("connected"))
+}
+
 fn run_with_activity_bar(label: &str, program: &str, args: &[&str], debug: bool) -> bool {
     if debug {
         println!("  {label}");
@@ -138,6 +153,14 @@ fn main() {
 
     run("clear");
 
+    if !networkmanager_reports_network() {
+        eprintln!(
+            "{ORANGE}ERROR: NetworkManager reports no active network connection.{RESET}"
+        );
+        eprintln!("Connect to a network and run GetWine again. Internet access is not used for this check.\n");
+        pause_exit(1);
+    }
+
     if debug {
         println!("-debug");
     }
@@ -149,7 +172,7 @@ fn main() {
     );
 
     println!(
-        "{ORANGE}NOTE: you MUST be connected to the internet to use this installer!{RESET}\n"
+        "{ORANGE}NOTE: downloads still require an internet connection to complete setup!{RESET}\n"
     );
 
     println!(
