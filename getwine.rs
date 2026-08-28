@@ -2,7 +2,7 @@ use std::{
     env,
     fs,
     io::{self, Read, Write},
-    process::{Command, Stdio, exit},
+    process::{Child, Command, Stdio, exit},
     sync::mpsc,
     thread,
     time::Duration,
@@ -10,6 +10,54 @@ use std::{
 
 const ORANGE: &str = "\x1b[38;5;208m";
 const RESET: &str = "\x1b[0m";
+
+struct SudoSession {
+    keepalive: Child,
+}
+
+impl SudoSession {
+    fn start() -> Result<Self, String> {
+        println!("Administrator authorization is required to install Wine.");
+        let status = Command::new("sudo")
+            .arg("-v")
+            .status()
+            .map_err(|error| format!("Could not request administrator authorization: {error}"))?;
+
+        if !status.success() {
+            return Err("Administrator authorization was not granted.".to_string());
+        }
+
+        let cached = Command::new("sudo")
+            .args(["-n", "true"])
+            .status()
+            .map(|status| status.success())
+            .unwrap_or(false);
+        if !cached {
+            return Err("The current sudo policy does not allow GetWine to maintain one authorization session.".to_string());
+        }
+
+        let keepalive = Command::new("sh")
+            .args([
+                "-c",
+                "while kill -0 \"$GETWINE_PARENT_PID\" 2>/dev/null; do sudo -n -v >/dev/null 2>&1 || exit 0; sleep 30; done",
+            ])
+            .env("GETWINE_PARENT_PID", std::process::id().to_string())
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|error| format!("Could not maintain administrator authorization: {error}"))?;
+
+        Ok(Self { keepalive })
+    }
+}
+
+impl Drop for SudoSession {
+    fn drop(&mut self) {
+        let _ = self.keepalive.kill();
+        let _ = self.keepalive.wait();
+    }
+}
 
 fn run(cmd: &str) -> bool {
     Command::new("sh")
@@ -286,16 +334,24 @@ fn main() {
         exit(1);
     }
 
-    run("sudo pacman -Sy");
+    let sudo_session = match SudoSession::start() {
+        Ok(session) => session,
+        Err(error) => {
+            eprintln!("{ORANGE}ERROR: {error}{RESET}\n");
+            pause_exit(1);
+        }
+    };
+
+    run("sudo -n pacman -Sy");
 
     println!("\n🔄 Removing any existing Wine packages...");
 
-    run("sudo pacman -Rdd --noconfirm wine-staging 2>/dev/null");
-    run("sudo pacman -Rdd --noconfirm wine-mono 2>/dev/null");
-    run("sudo pacman -Rdd --noconfirm wine-gecko 2>/dev/null");
-    run("sudo pacman -Rdd --noconfirm winetricks 2>/dev/null");
-    run("sudo pacman -Rdd --noconfirm wine 2>/dev/null");
-    run("sudo pacman -Rdd --noconfirm dosbox 2>/dev/null");
+    run("sudo -n pacman -Rdd --noconfirm wine-staging 2>/dev/null");
+    run("sudo -n pacman -Rdd --noconfirm wine-mono 2>/dev/null");
+    run("sudo -n pacman -Rdd --noconfirm wine-gecko 2>/dev/null");
+    run("sudo -n pacman -Rdd --noconfirm winetricks 2>/dev/null");
+    run("sudo -n pacman -Rdd --noconfirm wine 2>/dev/null");
+    run("sudo -n pacman -Rdd --noconfirm dosbox 2>/dev/null");
     run("yay -Rdd --noconfirm wine-wow64 2>/dev/null");
     run("yay -Rdd --noconfirm wine-staging-wow64 2>/dev/null");
     run("yay -Rdd --noconfirm wine-stable 2>/dev/null");
@@ -312,7 +368,7 @@ fn main() {
 
     println!("Installing Wine...");
 
-    run("sudo pacman -S --needed --noconfirm wine wine-mono wine-gecko winetricks dosbox");
+    run("sudo -n pacman -S --needed --noconfirm wine wine-mono wine-gecko winetricks dosbox");
 
     if run("pacman -Q wine >/dev/null 2>&1") {
         println!("✅ Wine installed successfully!");
@@ -379,8 +435,10 @@ fn main() {
 
     run("kbuildsycoca6 --noincremental");
 
-    run("sudo rm /usr/share/applications/getwine.desktop >/dev/null 2>&1");
-    run("sudo rm ~/.local/share/applications/getwine.desktop >/dev/null 2>&1");
+    run("sudo -n rm -f /usr/share/applications/getwine.desktop >/dev/null 2>&1");
+    run("rm -f ~/.local/share/applications/getwine.desktop >/dev/null 2>&1");
+
+    drop(sudo_session);
 
     println!("✅ Wine setup complete!");
 
