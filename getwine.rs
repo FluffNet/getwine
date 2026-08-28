@@ -177,9 +177,9 @@ fn main() {
 
     println!(
         "{ORANGE}THIRD-PARTY SOFTWARE NOTICE:{RESET}\n\
-         GetWine installs DXVK, Microsoft Core Fonts, Microsoft XACT, and the\n\
-         Microsoft Direct3D compiler. Winetricks downloads these required\n\
-         components during setup. Microsoft components are proprietary and\n\
+         GetWine installs DXVK, VKD3D-Proton, Microsoft Core Fonts, Microsoft\n\
+         XACT, and the Microsoft Direct3D compiler. Winetricks downloads these\n\
+         required components during setup. Microsoft components are proprietary and\n\
          subject to Microsoft's license terms. Fluff Linux does not distribute\n\
          or license these components. Continuing starts the complete installation.\n"
     );
@@ -241,6 +241,7 @@ fn main() {
     let components = [
         ("Microsoft Core Fonts", "corefonts"),
         ("DXVK", "dxvk"),
+        ("VKD3D-Proton", "vkd3d"),
         ("Microsoft XACT (64-bit)", "xact_x64"),
         ("Microsoft Direct3D Compiler 43", "d3dcompiler_43"),
     ];
