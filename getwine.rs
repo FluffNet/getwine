@@ -102,7 +102,7 @@ fn run_with_activity_bar(label: &str, program: &str, args: &[&str], debug: bool)
 }
 
 fn pause_exit(code: i32) -> ! {
-    println!("Press enter to exit the installer");
+    println!("Press Enter to close GetWine.");
     let mut buf = String::new();
     let _ = io::stdin().read_line(&mut buf);
     exit(code);
@@ -154,10 +154,9 @@ fn main() {
     run("clear");
 
     if !networkmanager_reports_network() {
-        eprintln!(
-            "{ORANGE}ERROR: NetworkManager reports no active network connection.{RESET}"
-        );
-        eprintln!("Connect to a network and run GetWine again. Internet access is not used for this check.\n");
+        eprintln!("{ORANGE}ERROR: No network connection was reported.{RESET}");
+        eprintln!("GetWine cannot continue without network connectivity.");
+        eprintln!("Connect to a network, then launch GetWine again.\n");
         pause_exit(1);
     }
 
