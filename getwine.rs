@@ -522,6 +522,7 @@ fn main() {
     ];
 
     let component_total = components.len();
+    let mut failed_components = Vec::new();
     for (index, (label, verb, expected_downloads)) in components.iter().enumerate() {
         if !run_with_progress(
             &user,
@@ -533,13 +534,15 @@ fn main() {
             component_total,
             *expected_downloads,
         ) {
-            eprintln!("❌ Failed to install {label}.");
-            eprintln!("Run GetWine with -debug to see Winetricks output.");
-            pause_exit(1);
+            failed_components.push(*label);
+            eprintln!("  Continuing with the remaining components...");
         }
     }
 
-    println!("✅ {component_total}/{component_total} required Wine components installed.");
+    let installed_components = component_total - failed_components.len();
+    println!(
+        "{installed_components}/{component_total} required Wine components installed."
+    );
 
     if fs::metadata(&dot_wine).is_err() {
         user.run_shell(&format!("ln -s '{}' '{}'", wine_prefix, dot_wine));
@@ -559,10 +562,18 @@ fn main() {
 
     user.run_shell("kbuildsycoca6 --noincremental");
 
-    run_root("rm -f /usr/share/applications/getwine.desktop >/dev/null 2>&1");
-    user.run_shell("rm -f ~/.local/share/applications/getwine.desktop >/dev/null 2>&1");
-
-    println!("✅ Wine setup complete!");
+    if failed_components.is_empty() {
+        run_root("rm -f /usr/share/applications/getwine.desktop >/dev/null 2>&1");
+        user.run_shell("rm -f ~/.local/share/applications/getwine.desktop >/dev/null 2>&1");
+        println!("✅ Wine setup complete!");
+    } else {
+        println!("\n⚠️ Wine setup completed with unavailable compatibility components:");
+        for component in &failed_components {
+            println!("  - {component}");
+        }
+        println!("The GetWine launcher was kept so you can retry later.");
+        println!("Run GetWine with -debug to inspect Winetricks errors.");
+    }
 
     pause_exit(0);
 }
